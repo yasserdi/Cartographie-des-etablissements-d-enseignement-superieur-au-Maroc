@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="css/leaflet.css"><link rel="stylesheet" href="css/L.Control.Locate.min.css">
+        <link rel="stylesheet" href="css/qgis2web.css"><link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <link rel="stylesheet" href="css/MarkerCluster.css">
+        <link rel="stylesheet" href="css/MarkerCluster.Default.css">
+        <link rel="stylesheet" href="css/leaflet-control-geocoder.Geocoder.css">
+        <link rel="stylesheet" href="css/leaflet-measure.css">
+        <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        </style>
+        <title>Cartographie des établissements d'enseignement supérieur au Maroc</title>
+    </head>
+    <body>
+        <div id="map">
+        </div>
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script><script src="js/L.Control.Locate.min.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="js/leaflet-control-geocoder.Geocoder.js"></script>
+        <script src="js/leaflet-measure.js"></script>
+        <script src="js/leaflet.markercluster.js"></script>
+        <script src="data/Regions_1.js"></script>
+        <script src="data/Secteurdeltablissement_2.js"></script>
+        <script src="data/Catgoriedestablissementsdenseignementsuprieur_3.js"></script>
+        <script>
+        var highlightLayer;
+        function highlightFeature(e) {
+            highlightLayer = e.target;
+
+            if (e.target.feature.geometry.type === 'LineString') {
+              highlightLayer.setStyle({
+                color: '#2ea7e3',
+              });
+            } else {
+              highlightLayer.setStyle({
+                fillColor: '#2ea7e3',
+                fillOpacity: 1
+              });
+            }
+            highlightLayer.openPopup();
+        }
+        var map = L.map('map', {
+            zoomControl:true, maxZoom:28, minZoom:1
+        })
+        var hash = new L.Hash(map);
+        map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+        var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
+        L.control.locate({locateOptions: {maxZoom: 19}}).addTo(map);
+        var measureControl = new L.Control.Measure({
+            position: 'topleft',
+            primaryLengthUnit: 'meters',
+            secondaryLengthUnit: 'kilometers',
+            primaryAreaUnit: 'sqmeters',
+            secondaryAreaUnit: 'hectares'
+        });
+        measureControl.addTo(map);
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0]
+        .innerHTML = '';
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0]
+        .className += ' fas fa-ruler';
+        var bounds_group = new L.featureGroup([]);
+        function setBounds() {
+            if (bounds_group.getLayers().length) {
+                map.fitBounds(bounds_group.getBounds());
+            }
+            map.setMaxBounds(map.getBounds());
+        }
+        map.createPane('pane_OpenStreetMapfr_0');
+        map.getPane('pane_OpenStreetMapfr_0').style.zIndex = 400;
+        var layer_OpenStreetMapfr_0 = L.tileLayer('http://a.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
+            pane: 'pane_OpenStreetMapfr_0',
+            opacity: 1.0,
+            attribution: '<a href="http://www.openstreetmap.org/copyright">OpenStreetMap contributors, under ODbL</a>',
+            minZoom: 1,
+            maxZoom: 28,
+            minNativeZoom: 0,
+            maxNativeZoom: 19
+        });
+        layer_OpenStreetMapfr_0;
+        map.addLayer(layer_OpenStreetMapfr_0);
+        function pop_Regions_1(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (i in e.target._eventParents) {
+                        e.target._eventParents[i].resetStyle(e.target);
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['OBJECTID'] !== null ? autolinker.link(feature.properties['OBJECTID'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['CODE_REGIO'] !== null ? autolinker.link(feature.properties['CODE_REGIO'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Population'] !== null ? autolinker.link(feature.properties['Population'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Menages'] !== null ? autolinker.link(feature.properties['Menages'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Etrangers'] !== null ? autolinker.link(feature.properties['Etrangers'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Marocains'] !== null ? autolinker.link(feature.properties['Marocains'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Nom_Region'] !== null ? autolinker.link(feature.properties['Nom_Region'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['RuleID'] !== null ? autolinker.link(feature.properties['RuleID'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Shape__Are'] !== null ? autolinker.link(feature.properties['Shape__Are'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Shape__Len'] !== null ? autolinker.link(feature.properties['Shape__Len'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            layer.bindPopup(popupContent, {maxHeight: 400});
+        }
+
+        function style_Regions_1_0() {
+            return {
+                pane: 'pane_Regions_1',
+                opacity: 1,
+                color: 'rgba(0,0,0,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(150,150,150,0.0)',
+                interactive: false,
+            }
+        }
+        map.createPane('pane_Regions_1');
+        map.getPane('pane_Regions_1').style.zIndex = 401;
+        map.getPane('pane_Regions_1').style['mix-blend-mode'] = 'normal';
+        var layer_Regions_1 = new L.geoJson(json_Regions_1, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_Regions_1',
+            layerName: 'layer_Regions_1',
+            pane: 'pane_Regions_1',
+            onEachFeature: pop_Regions_1,
+            style: style_Regions_1_0,
+        });
+        bounds_group.addLayer(layer_Regions_1);
+        map.addLayer(layer_Regions_1);
+        function pop_Secteurdeltablissement_2(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (i in e.target._eventParents) {
+                        e.target._eventParents[i].resetStyle(e.target);
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Etablissement</th>\
+                        <td>' + (feature.properties['Etablissement'] !== null ? autolinker.link(feature.properties['Etablissement'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Abréviation</th>\
+                        <td>' + (feature.properties['Abréviation'] !== null ? autolinker.link(feature.properties['Abréviation'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Type</th>\
+                        <td>' + (feature.properties['Type'] !== null ? autolinker.link(feature.properties['Type'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Secteur</th>\
+                        <td>' + (feature.properties['Secteur'] !== null ? autolinker.link(feature.properties['Secteur'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Champ disciplinaire</th>\
+                        <td>' + (feature.properties['Champ disciplinaire'] !== null ? autolinker.link(feature.properties['Champ disciplinaire'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Nombre_Etudiant_2020</th>\
+                        <td>' + (feature.properties['Nombre_Etudiant_2020'] !== null ? autolinker.link(feature.properties['Nombre_Etudiant_2020'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Nombre_Etudiant_2021</th>\
+                        <td>' + (feature.properties['Nombre_Etudiant_2021'] !== null ? autolinker.link(feature.properties['Nombre_Etudiant_2021'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Nombre d\'étudiants étrangers</th>\
+                        <td>' + (feature.properties['EI'] !== null ? autolinker.link(feature.properties['EI'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Nombre d\'étudiantes</th>\
+                        <td>' + (feature.properties['Féminin'] !== null ? autolinker.link(feature.properties['Féminin'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Nombre de doctrants</th>\
+                        <td>' + (feature.properties['Doctorat'] !== null ? autolinker.link(feature.properties['Doctorat'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Nombre d\'étudiants inscrits en Master</th>\
+                        <td>' + (feature.properties['Master'] !== null ? autolinker.link(feature.properties['Master'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Cycle normal</th>\
+                        <td>' + (feature.properties['Cycle normal'] !== null ? autolinker.link(feature.properties['Cycle normal'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Ville</th>\
+                        <td>' + (feature.properties['Ville'] !== null ? autolinker.link(feature.properties['Ville'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Region</th>\
+                        <td>' + (feature.properties['Region'] !== null ? autolinker.link(feature.properties['Region'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Adresse</th>\
+                        <td>' + (feature.properties['Adresse'] !== null ? autolinker.link(feature.properties['Adresse'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Tel</th>\
+                        <td>' + (feature.properties['Tel'] !== null ? autolinker.link(feature.properties['Tel'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Fax</th>\
+                        <td>' + (feature.properties['Fax'] !== null ? autolinker.link(feature.properties['Fax'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Mail</th>\
+                        <td>' + (feature.properties['Mail'] !== null ? autolinker.link(feature.properties['Mail'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Site</th>\
+                        <td>' + (feature.properties['Site'] !== null ? autolinker.link(feature.properties['Site'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            layer.bindPopup(popupContent, {maxHeight: 400});
+        }
+
+        function style_Secteurdeltablissement_2_0(feature) {
+            switch(String(feature.properties['Secteur'])) {
+                case 'Privé':
+                    return {
+                pane: 'pane_Secteurdeltablissement_2',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(71,217,115,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Public':
+                    return {
+                pane: 'pane_Secteurdeltablissement_2',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(240,86,15,1.0)',
+                interactive: true,
+            }
+                    break;
+            }
+        }
+        map.createPane('pane_Secteurdeltablissement_2');
+        map.getPane('pane_Secteurdeltablissement_2').style.zIndex = 402;
+        map.getPane('pane_Secteurdeltablissement_2').style['mix-blend-mode'] = 'normal';
+        var layer_Secteurdeltablissement_2 = new L.geoJson(json_Secteurdeltablissement_2, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_Secteurdeltablissement_2',
+            layerName: 'layer_Secteurdeltablissement_2',
+            pane: 'pane_Secteurdeltablissement_2',
+            onEachFeature: pop_Secteurdeltablissement_2,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_Secteurdeltablissement_2_0(feature));
+            },
+        });
+        var cluster_Secteurdeltablissement_2 = new L.MarkerClusterGroup({showCoverageOnHover: false,
+            spiderfyDistanceMultiplier: 2});
+        cluster_Secteurdeltablissement_2.addLayer(layer_Secteurdeltablissement_2);
+
+        bounds_group.addLayer(layer_Secteurdeltablissement_2);
+        cluster_Secteurdeltablissement_2.addTo(map);
+        function pop_Catgoriedestablissementsdenseignementsuprieur_3(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (i in e.target._eventParents) {
+                        e.target._eventParents[i].resetStyle(e.target);
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Etablissement</th>\
+                        <td>' + (feature.properties['Etablissement'] !== null ? autolinker.link(feature.properties['Etablissement'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Abréviation</th>\
+                        <td>' + (feature.properties['Abréviation'] !== null ? autolinker.link(feature.properties['Abréviation'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Type</th>\
+                        <td>' + (feature.properties['Type'] !== null ? autolinker.link(feature.properties['Type'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Secteur</th>\
+                        <td>' + (feature.properties['Secteur'] !== null ? autolinker.link(feature.properties['Secteur'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Champ disciplinaire</th>\
+                        <td>' + (feature.properties['Champ disciplinaire'] !== null ? autolinker.link(feature.properties['Champ disciplinaire'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Nombre_Etudiant_2020</th>\
+                        <td>' + (feature.properties['Nombre_Etudiant_2020'] !== null ? autolinker.link(feature.properties['Nombre_Etudiant_2020'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Nombre_Etudiant_2021</th>\
+                        <td>' + (feature.properties['Nombre_Etudiant_2021'] !== null ? autolinker.link(feature.properties['Nombre_Etudiant_2021'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Nombre d\'étudiants étrangers</th>\
+                        <td>' + (feature.properties['EI'] !== null ? autolinker.link(feature.properties['EI'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Nombre d\'étudiantes</th>\
+                        <td>' + (feature.properties['Féminin'] !== null ? autolinker.link(feature.properties['Féminin'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Nombre de doctrants</th>\
+                        <td>' + (feature.properties['Doctorat'] !== null ? autolinker.link(feature.properties['Doctorat'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Nombre d\'étudiants inscrits en Master</th>\
+                        <td>' + (feature.properties['Master'] !== null ? autolinker.link(feature.properties['Master'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Cycle normal</th>\
+                        <td>' + (feature.properties['Cycle normal'] !== null ? autolinker.link(feature.properties['Cycle normal'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Ville</th>\
+                        <td>' + (feature.properties['Ville'] !== null ? autolinker.link(feature.properties['Ville'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Region</th>\
+                        <td>' + (feature.properties['Region'] !== null ? autolinker.link(feature.properties['Region'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Adresse</th>\
+                        <td>' + (feature.properties['Adresse'] !== null ? autolinker.link(feature.properties['Adresse'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Tel</th>\
+                        <td>' + (feature.properties['Tel'] !== null ? autolinker.link(feature.properties['Tel'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Fax</th>\
+                        <td>' + (feature.properties['Fax'] !== null ? autolinker.link(feature.properties['Fax'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Mail</th>\
+                        <td>' + (feature.properties['Mail'] !== null ? autolinker.link(feature.properties['Mail'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Site</th>\
+                        <td>' + (feature.properties['Site'] !== null ? autolinker.link(feature.properties['Site'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            layer.bindPopup(popupContent, {maxHeight: 400});
+        }
+
+        function style_Catgoriedestablissementsdenseignementsuprieur_3_0(feature) {
+            switch(String(feature.properties['Type'])) {
+                case 'ENSEIGNEMENT SUPÉRIEUR PRIVÉ':
+                    return {
+                pane: 'pane_Catgoriedestablissementsdenseignementsuprieur_3',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(71,213,46,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'ENSEIGNEMENT UNIVERSITAIRE PUBLIC':
+                    return {
+                pane: 'pane_Catgoriedestablissementsdenseignementsuprieur_3',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(212,62,235,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'FORMATION DES CADRES':
+                    return {
+                pane: 'pane_Catgoriedestablissementsdenseignementsuprieur_3',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(53,166,227,1.0)',
+                interactive: true,
+            }
+                    break;
+            }
+        }
+        map.createPane('pane_Catgoriedestablissementsdenseignementsuprieur_3');
+        map.getPane('pane_Catgoriedestablissementsdenseignementsuprieur_3').style.zIndex = 403;
+        map.getPane('pane_Catgoriedestablissementsdenseignementsuprieur_3').style['mix-blend-mode'] = 'normal';
+        var layer_Catgoriedestablissementsdenseignementsuprieur_3 = new L.geoJson(json_Catgoriedestablissementsdenseignementsuprieur_3, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_Catgoriedestablissementsdenseignementsuprieur_3',
+            layerName: 'layer_Catgoriedestablissementsdenseignementsuprieur_3',
+            pane: 'pane_Catgoriedestablissementsdenseignementsuprieur_3',
+            onEachFeature: pop_Catgoriedestablissementsdenseignementsuprieur_3,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_Catgoriedestablissementsdenseignementsuprieur_3_0(feature));
+            },
+        });
+        var cluster_Catgoriedestablissementsdenseignementsuprieur_3 = new L.MarkerClusterGroup({showCoverageOnHover: false,
+            spiderfyDistanceMultiplier: 2});
+        cluster_Catgoriedestablissementsdenseignementsuprieur_3.addLayer(layer_Catgoriedestablissementsdenseignementsuprieur_3);
+
+        bounds_group.addLayer(layer_Catgoriedestablissementsdenseignementsuprieur_3);
+        cluster_Catgoriedestablissementsdenseignementsuprieur_3.addTo(map);
+        map.on("zoomend", function(e) {
+            if (map.getZoom() <= 19 && map.getZoom() >= 2) {
+                map.addLayer(layer_Regions_1);
+            } else if (map.getZoom() > 19 || map.getZoom() < 2) {
+                map.removeLayer(layer_Regions_1);
+            }
+        });
+            if (map.getZoom() <= 19 && map.getZoom() >= 2) {
+                map.addLayer(layer_Regions_1);
+            } else if (map.getZoom() > 19 || map.getZoom() < 2) {
+                map.removeLayer(layer_Regions_1);
+            }
+            var title = new L.Control();
+            title.onAdd = function (map) {
+                this._div = L.DomUtil.create('div', 'info');
+                this.update();
+                return this._div;
+            };
+            title.update = function () {
+                this._div.innerHTML = '<h2>Cartographie des établissements d\'enseignement supérieur au Maroc</h2>';
+            };
+            title.addTo(map);
+        var osmGeocoder = new L.Control.Geocoder({
+            collapsed: true,
+            position: 'topleft',
+            text: 'Search',
+            title: 'Testing'
+        }).addTo(map);
+        document.getElementsByClassName('leaflet-control-geocoder-icon')[0]
+        .className += ' fa fa-search';
+        document.getElementsByClassName('leaflet-control-geocoder-icon')[0]
+        .title += 'Search for a place';
+        var baseMaps = {};
+        L.control.layers(baseMaps,{'Catégorie des établissements d\'enseignement supérieur<br /><table><tr><td style="text-align: center;"><img src="legend/Catgoriedestablissementsdenseignementsuprieur_3_ENSEIGNEMENTSUPÉRIEURPRIVÉ0.png" /></td><td>ENSEIGNEMENT SUPÉRIEUR PRIVÉ</td></tr><tr><td style="text-align: center;"><img src="legend/Catgoriedestablissementsdenseignementsuprieur_3_ENSEIGNEMENTUNIVERSITAIREPUBLIC1.png" /></td><td>ENSEIGNEMENT UNIVERSITAIRE PUBLIC</td></tr><tr><td style="text-align: center;"><img src="legend/Catgoriedestablissementsdenseignementsuprieur_3_FORMATIONDESCADRES2.png" /></td><td>FORMATION DES CADRES</td></tr></table>': cluster_Catgoriedestablissementsdenseignementsuprieur_3,'Secteur de l\'établissement <br /><table><tr><td style="text-align: center;"><img src="legend/Secteurdeltablissement_2_Privé0.png" /></td><td>Privé</td></tr><tr><td style="text-align: center;"><img src="legend/Secteurdeltablissement_2_Public1.png" /></td><td>Public</td></tr></table>': cluster_Secteurdeltablissement_2,'<img src="legend/Regions_1.png" /> Regions': layer_Regions_1,"OpenStreetMap.fr": layer_OpenStreetMapfr_0,}).addTo(map);
+        setBounds();
+        var i = 0;
+        layer_Regions_1.eachLayer(function(layer) {
+            var context = {
+                feature: layer.feature,
+                variables: {}
+            };
+            layer.bindTooltip((layer.feature.properties['Nom_Region'] !== null?String('<div style="color: #323232; font-size: 15pt; font-weight: bold; font-family: \'Berlin Sans FB Demi\', sans-serif;">' + layer.feature.properties['Nom_Region']) + '</div>':''), {permanent: true, offset: [-0, -16], className: 'css_Regions_1'});
+            labels.push(layer);
+            totalMarkers += 1;
+              layer.added = true;
+              addLabel(layer, i);
+              i++;
+        });
+        resetLabels([layer_Regions_1]);
+        map.on("zoomend", function(){
+            resetLabels([layer_Regions_1]);
+        });
+        map.on("layeradd", function(){
+            resetLabels([layer_Regions_1]);
+        });
+        map.on("layerremove", function(){
+            resetLabels([layer_Regions_1]);
+        });
+        </script>
+    </body>
+</html>
